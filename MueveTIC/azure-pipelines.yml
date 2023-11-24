@@ -1,0 +1,34 @@
+trigger:
+- develop-Cristian
+
+pool: 
+  name: Default
+  demands:
+  - agent.name -equals CALSOFT2324
+
+
+stages:
+- stage: Preparation
+  jobs:
+  - job: PreparationJob
+    steps:
+    - script: echo Preparation!
+      displayName: 'Echo Preparation'
+
+- stage: Build
+  jobs:
+  - job: BuildJob
+    steps:
+    - checkout: none
+    - script: echo Building!
+      displayName: 'Echo Building'
+      
+- stage: Sonarqube
+  jobs:
+  - job: SonarqubeJob
+    steps:
+    - checkout: none
+    - script: sonar-scanner -D sonar.token=$(SQ_TOKEN)
+      displayName: 'SonarQube Scanner'
+    - script: echo Sonarqube ok!
+      displayName: 'Echo SonarQube OK'
