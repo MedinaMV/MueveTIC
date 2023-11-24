@@ -23,6 +23,10 @@ public class UserService {
 	private UserDAO userRepository;
 	@Autowired
 	private BookingDAO bookingRepository;
+	
+	public User consultUser(String email) {
+		return this.userRepository.findByEmail(email).get();
+	}
 
 	public void deactivate(String email) {
 		var user = this.userRepository.findByEmail(email);
