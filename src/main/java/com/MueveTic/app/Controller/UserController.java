@@ -27,7 +27,7 @@ public class UserController {
 	private UserService usersService;
 	private static final String EMAIL = "email";
 	
-	@GetMapping
+	@GetMapping("/consultUser")
 	public User consultUser(@RequestParam String email) {
 		return this.usersService.consultUser(email);
 	}
