@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.MueveTic.app.Entities.User;
 import com.MueveTic.app.Services.UserService;
 
 @RestController
@@ -25,6 +26,11 @@ public class UserController {
 	@Autowired
 	private UserService usersService;
 	private static final String EMAIL = "email";
+	
+	@GetMapping
+	public User consultUser(@RequestParam String email) {
+		return this.usersService.consultUser(email);
+	}
 	
 	@PutMapping("/deactivate")
 	public ResponseEntity<String> deactivate(@RequestBody Map<String, Object> info) {
