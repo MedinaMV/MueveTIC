@@ -1,5 +1,7 @@
 package com.MueveTic.app.Config;
 
+import java.util.Arrays;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +11,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.MueveTic.app.Jwt.JwtAuthenticationFilter;
 
@@ -25,8 +30,9 @@ public class SecurityConfig {
     {
         return http
             .csrf(csrf -> 
-                csrf
-                .disable())
+                csrf.disable())
+            .cors()
+            .and()
             .authorizeHttpRequests(authRequest ->
               authRequest
                 .requestMatchers("/admins/*").hasRole("ADMIN")
@@ -44,7 +50,14 @@ public class SecurityConfig {
                 .requestMatchers("/personal/*").hasRole("ADMIN")
                 .requestMatchers("/person/register-admin").hasRole("ADMIN")
                 .requestMatchers("/person/register-mantenance").hasRole("ADMIN")
-                .requestMatchers("/users/*").hasRole("USER")
+                .requestMatchers("/users/consultUser").hasRole("USER")
+                .requestMatchers("/users/deactivate").hasRole("ADMIN")
+                .requestMatchers("/users/delete").hasRole("USER")
+                .requestMatchers("/users/update").hasRole("USER")
+                .requestMatchers("/users/updateAdmin").hasRole("ADMIN")
+                .requestMatchers("/vehicle/consultRatingCar").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/vehicle/consultRatingScooter").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/vehicle/consultRatingMotorcycle").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/vehicle/consultVehicle").hasRole("ADMIN")
                 .requestMatchers("/vehicle/getAllCars").hasRole("ADMIN")
                 .requestMatchers("/vehicle/getAllMotorcycle").hasRole("ADMIN")
@@ -68,5 +81,19 @@ public class SecurityConfig {
             .authenticationProvider(authProvider)
             .addFilterBefore((Filter) jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .build();
+    }
+	
+	@Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 }

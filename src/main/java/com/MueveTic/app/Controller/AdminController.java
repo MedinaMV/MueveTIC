@@ -21,8 +21,7 @@ import com.MueveTic.app.Entities.ConfigParams;
 import com.MueveTic.app.Entities.PersonalMant;
 import com.MueveTic.app.Entities.User;
 import com.MueveTic.app.Services.AdminService;
-import com.MueveTic.app.Utils.AdminRatingResponse;
-
+import com.MueveTic.app.Utils.Utilities;
 @RestController
 @RequestMapping("admins")
 @CrossOrigin("*")
@@ -30,6 +29,7 @@ public class AdminController {
 
 	@Autowired
 	private AdminService adminService;
+	private Utilities utils = new Utilities();
 	private static final String EMAIL = "email";
 	
 	@GetMapping("/consultUsers")
@@ -45,21 +45,6 @@ public class AdminController {
 	@GetMapping("/consultPersonalMantenance")
 	public List<PersonalMant> consultPersonalMantenance(){
 		return this.adminService.consultMantenance();
-	}
-	
-	@GetMapping("/consultRatingCar")
-	public List<AdminRatingResponse> consultRatingCar(){
-		return this.adminService.consultRatingCar();
-	}
-	
-	@GetMapping("/consultRatingScooter")
-	public List<AdminRatingResponse> consultRatingScooter(){
-		return this.adminService.consultRatingScooter();
-	}
-	
-	@GetMapping("/consultRatingMotorcycle")
-	public List<AdminRatingResponse> consultRatingMotorcycle(){
-		return this.adminService.consultRatingMotorcycle();
 	}
 	
 	@GetMapping("/consultReviews")
@@ -84,8 +69,9 @@ public class AdminController {
 	}
 	
 	@PostMapping("/resetPassword")
-	public ResponseEntity<String> resetPassword(@RequestBody Map<String, Object> info) {
-		this.adminService.resetPassword(info.get(EMAIL).toString(), info.get("password").toString());
+	public ResponseEntity<String> resetPassword(@RequestBody Map<String, Object> info) throws Exception {
+		String emailDecrypted = utils.decryptText(info.get(EMAIL).toString());
+		this.adminService.resetPassword(emailDecrypted, info.get("password").toString());
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 	
@@ -103,6 +89,16 @@ public class AdminController {
 	public ResponseEntity<String> activate(@RequestBody Map<String, Object> info) {
 		try {
 			this.adminService.activate(info.get(EMAIL).toString());
+		} catch (Exception e) {
+			return new ResponseEntity<>(e.getMessage(),HttpStatus.CONFLICT);
+		}
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
+	
+	@PutMapping("/activateAdmin")
+	public ResponseEntity<String> activateAdmin(@RequestBody Map<String, Object> info) {
+		try {
+			this.adminService.activateAdmin(info.get(EMAIL).toString());
 		} catch (Exception e) {
 			return new ResponseEntity<>(e.getMessage(),HttpStatus.CONFLICT);
 		}

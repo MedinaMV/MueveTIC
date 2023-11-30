@@ -2,13 +2,16 @@ package com.MueveTic.app.Services;
 
 import com.MueveTic.app.Entities.PersonalMant;
 import com.MueveTic.app.Repositories.PersonalMantDAO;
+import com.MueveTic.app.Utils.Utilities;
+
+import java.util.Optional;
 
 import javax.management.InvalidAttributeValueException;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,6 +19,18 @@ public class PersonalMantService {
 
 	@Autowired
 	private PersonalMantDAO personalRepository;
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+	private Utilities utils = new Utilities();
+	
+	public boolean isActive(String email) {
+		Boolean result = false;
+		Optional<PersonalMant> user = this.personalRepository.findByEmail(email);
+		if(user.isPresent() && user.get().getValidation() == 1) {
+			result = true;
+		}
+		return result;
+	} 
 
 	public void deactivate(String email) {
 		var personal = this.personalRepository.findByEmail(email);
@@ -25,7 +40,16 @@ public class PersonalMantService {
 		}
 	}
 
-	public void activate(String email) {
+	public void activate(String email) throws Exception {
+		email = utils.decryptText(email);
+		var personal = this.personalRepository.findByEmail(email);
+		if (personal.isPresent() && (personal.get().getValidation() == 0)) {
+			personal.get().setValidation((byte) 1);
+			this.personalRepository.save(personal.get());
+		}	
+	}
+	
+	public void activatePersonal(String email) throws Exception {
 		var personal = this.personalRepository.findByEmail(email);
 		if (personal.isPresent() && (personal.get().getValidation() == 0)) {
 			personal.get().setValidation((byte) 1);
@@ -36,7 +60,7 @@ public class PersonalMantService {
 	public void resetPassword(String email, String password) {
 		var personal = this.personalRepository.findByEmail(email);
 		if (personal.isPresent() &&  (personal.get().getValidation() == 1)) {
-			personal.get().setPassword(DigestUtils.sha512Hex(password));
+			personal.get().setPassword(passwordEncoder.encode(password));
 			this.personalRepository.save(personal.get());
 		}else {
 			throw new UsernameNotFoundException("Email not found: " + email);

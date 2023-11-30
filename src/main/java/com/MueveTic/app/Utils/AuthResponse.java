@@ -9,6 +9,11 @@ public class AuthResponse {
 		this.token = token;
 		this.role = role;
 	}
+	
+	public AuthResponse() {
+		this.token = "";
+		this.role = "";
+	}
 
 	public String getToken() {
 		return token;

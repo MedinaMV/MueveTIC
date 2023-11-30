@@ -27,6 +27,9 @@ public class User extends Person{
 	@Field
 	@NonNull
 	private String birthDate;
+	@Field
+	@NonNull
+	private String tfaSecret;
 
 	public User(String email, String name, String surname, String dni, String password, String role, String carnet, String numberPhone,String birthDate) 
 			throws InvalidAttributeValueException {
@@ -70,6 +73,14 @@ public class User extends Person{
 		this.birthDate = birthDate;
 	}
 	
+	public String getTfaSecret() {
+		return tfaSecret;
+	}
+
+	public void setTfaSecret(String tfaSecret) {
+		this.tfaSecret = tfaSecret;
+	}
+
 	@Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
       return List.of(new SimpleGrantedAuthority((this.role)));

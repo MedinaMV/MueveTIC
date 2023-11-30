@@ -1,7 +1,11 @@
 package com.MueveTic.app.Services;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.MueveTic.app.Entities.PendingCharging;
 import com.MueveTic.app.Entities.PersonalMant;
@@ -33,14 +37,27 @@ public class PendingChargingService {
 			vehicleService.changeStateVehicle(v);
 			pc.setId(seqGenerator.getSequenceNumber(PendingCharging.SEQUENCE_NAME));
 			this.pendingChargingRepository.insert(pc);
+		}else {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Máximo número de reservas alcanzado.");
 		}
 	}
 	
-	public void removePendingChargingVehicle(String licensePlate) {
-		this.pendingChargingRepository.delete(this.pendingChargingRepository.findByVehicle(vehicleService.consultVehicle(licensePlate)));
+	public List<PendingCharging> removePendingChargingVehicle(String licensePlate, String email) {
+		Vehicle v = vehicleService.consultVehicle(licensePlate);
+		v.setUnAvailable();
+		vehicleService.changeStateVehicle(v);
+		this.pendingChargingRepository.delete(this.pendingChargingRepository.findByVehicle(v));
+		return this.consultPendingChargingVehicle(email);
 	}
+	public List<PendingCharging> removeChargeVehicle(String licensePlate, String email) {
+		Vehicle v = vehicleService.consultVehicle(licensePlate);
+		this.pendingChargingRepository.delete(this.pendingChargingRepository.findByVehicle(v));
+		return this.consultPendingChargingVehicle(email);
+	}
+	
+	
 
-	public void consultPendingChargingVehicle(String email) {
-		this.pendingChargingRepository.findByPersonalMant((PersonalMant)personService.searchPerson(email));
+	public List<PendingCharging> consultPendingChargingVehicle(String email) {
+		return this.pendingChargingRepository.findByPersonalMant((PersonalMant)personService.searchPerson(email));
 	}
 }

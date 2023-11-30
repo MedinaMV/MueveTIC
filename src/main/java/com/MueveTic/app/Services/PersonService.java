@@ -1,6 +1,7 @@
 package com.MueveTic.app.Services;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import javax.management.InvalidAttributeValueException;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ import com.MueveTic.app.Repositories.AdminDAO;
 import com.MueveTic.app.Repositories.PersonalMantDAO;
 import com.MueveTic.app.Repositories.UserDAO;
 import com.MueveTic.app.Utils.AuthResponse;
+import com.MueveTic.app.Utils.UserRegisterResponse;
 import com.MueveTic.app.Utils.Utilities;
 
 @Service
@@ -42,6 +45,8 @@ public class PersonService {
 	private SequenceGeneratorService seqGenerator;
 	@Autowired
 	private EmailService emailService;
+	@Autowired
+	private TwoFactorAuth twoFactorAuth;
 
 	private static final String EMAIL = "email";
 	private static final String PASSWORD = "password";
@@ -66,15 +71,18 @@ public class PersonService {
 		}
 	}
 
-	public void registerUser(Map<String, Object> info) throws Exception {
+	public UserRegisterResponse registerUser(Map<String, Object> info) throws Exception {
 		String email = info.get(EMAIL).toString();
+		String secret = "";
 		if (checkPassword(info.get(PASSWORD).toString())) {
 			if (!checkRepeated(email)) {
+				secret = twoFactorAuth.generateNewSecret();
 				User user = new User(email, info.get("name").toString(), info.get(SURNAME).toString(),
 						info.get("dni").toString(), passwordEncoder.encode(info.get(PASSWORD).toString()),
 						info.get("role").toString(), info.get("carnet").toString(), info.get("numberPhone").toString(),
 						info.get("birthDate").toString());
 				user.setId(seqGenerator.getSequenceNumber(User.SEQUENCE_NAME));
+				user.setTfaSecret(secret);
 				userRepository.save(user);
 				emailService.sendActivationEmail(email);
 			} else {
@@ -83,6 +91,7 @@ public class PersonService {
 		} else {
 			throw new InvalidAttributeValueException(PASSWORDMESSAGE);
 		}
+		return new UserRegisterResponse(twoFactorAuth.generateQrCodeImageUri(secret));
 	}
 
 	public void registerMantenance(Map<String, Object> info)
@@ -105,11 +114,41 @@ public class PersonService {
 			throw new InvalidAttributeValueException(PASSWORDMESSAGE);
 		}
 	}
-
+	
+	public AuthResponse accessLogin(String email, String password) {
+		AuthResponse au = null;
+		if(!verifyIdentity(email)) {
+			au = login(email,password);
+		}else {
+			au = userLogin(email,password);
+		}
+		return au;
+	}
+	
 	public AuthResponse login(String email, String password) {
 		authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
 		Person person = this.searchPerson(email);
 		return new AuthResponse(jwtService.getToken(person), person.getRole());
+	}
+	
+	public AuthResponse userLogin(String email, String password) {
+		AuthResponse au = new AuthResponse();
+		authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password)).isAuthenticated();
+		return au;
+	}
+	
+	public AuthResponse verifyCode(Map<String, Object> info) {
+		User user = null;
+		Optional<User> optionalUser = this.userRepository.findByEmail(info.get("email").toString());
+		if(optionalUser.isPresent()) {
+			user = optionalUser.get();
+			if(!twoFactorAuth.isOtpValid(user.getTfaSecret(), info.get("code").toString())) {
+				throw new BadCredentialsException("Code is not correct");
+			}
+		}else {
+			throw new BadCredentialsException("User not found");
+		}
+		return new AuthResponse(jwtService.getToken(user), user.getRole());
 	}
 
 	public Person searchPerson(String email) {
@@ -127,6 +166,10 @@ public class PersonService {
 			return mantenance.get();
 		}
 		return null;
+	}
+	
+	private boolean verifyIdentity(String email) {
+		return this.searchPerson(email) instanceof User;
 	}
 	
 	private boolean checkRepeated(String email) {

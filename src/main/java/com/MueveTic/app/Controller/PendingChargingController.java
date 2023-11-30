@@ -1,5 +1,6 @@
 package com.MueveTic.app.Controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.MueveTic.app.Entities.PendingCharging;
 import com.MueveTic.app.Services.PendingChargingService;
 
 @RestController
@@ -34,14 +36,19 @@ public class PendingChargingController {
 	}
 	
 	@GetMapping("/consultPendingChargingVehicle")
-	public ResponseEntity<String> consultPendingChargingVehicle(@RequestParam String email) {
-		this.pendingChargingService.consultPendingChargingVehicle(email);
-		return new ResponseEntity<>(HttpStatus.OK);
+	public ResponseEntity<List<PendingCharging>> consultPendingChargingVehicle(@RequestParam String email) {
+		return new ResponseEntity<>(this.pendingChargingService.consultPendingChargingVehicle(email),HttpStatus.OK);
 	}
 	
 	@GetMapping("/removePendingChargingVehicle")
-	public ResponseEntity<String> removePendingChargingVehicle(@RequestParam String licensePlate) {
-		this.pendingChargingService.removePendingChargingVehicle(licensePlate);
+	public ResponseEntity<String> removePendingChargingVehicle(@RequestParam String email,@RequestParam String licensePlate) {
+		this.pendingChargingService.removePendingChargingVehicle(licensePlate,email);
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
+	
+	@GetMapping("/removeChargeVehicle")
+	public ResponseEntity<String> removeChargeVehicle(@RequestParam String email,@RequestParam String licensePlate) {
+		this.pendingChargingService.removeChargeVehicle(licensePlate,email);
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 }

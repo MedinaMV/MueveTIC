@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.MueveTic.app.Entities.User;
 import com.MueveTic.app.Services.UserService;
+import com.MueveTic.app.Utils.Utilities;
 
 @RestController
 @RequestMapping("users")
@@ -25,6 +26,7 @@ public class UserController {
 
 	@Autowired
 	private UserService usersService;
+	private Utilities utils = new Utilities();
 	private static final String EMAIL = "email";
 	
 	@GetMapping("/consultUser")
@@ -62,6 +64,16 @@ public class UserController {
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 	
+	@PutMapping("/activateUser")
+	public ResponseEntity<String> activateUser(@RequestBody Map<String, Object> info) {
+		try {
+			this.usersService.activateUser(info.get(EMAIL).toString());
+		}catch (Exception e) {
+			return new ResponseEntity<>(e.getMessage(),HttpStatus.CONFLICT);
+		}
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
+	
 	@PostMapping("/update")
 	public ResponseEntity<String> update(@RequestBody Map<String, Object> info){
 		try {
@@ -73,10 +85,22 @@ public class UserController {
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 	
+	@PostMapping("/updateAdmin")
+	public ResponseEntity<String> updateAdmin(@RequestBody Map<String, Object> info){
+		try {
+			JSONObject jso = new JSONObject(info);
+			this.usersService.updateAdmin(jso);
+		}catch (Exception e) {
+			return new ResponseEntity<>(e.getMessage(),HttpStatus.CONFLICT);
+		}
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
+	
 	@PostMapping("/resetPassword")
 	public ResponseEntity<String> resetPassword(@RequestBody Map<String, Object> info) {
 		try {
-			this.usersService.resetPassword(info.get(EMAIL).toString(), info.get("password").toString());
+			String emailDecrypt = utils.decryptText(info.get(EMAIL).toString());
+			this.usersService.resetPassword(emailDecrypt, info.get("password").toString());
 		}catch (Exception e) {
 			return new ResponseEntity<>(e.getMessage(),HttpStatus.CONFLICT);
 		}

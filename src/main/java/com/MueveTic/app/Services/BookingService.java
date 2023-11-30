@@ -42,10 +42,13 @@ public class BookingService implements StateVehicle, StateBooking{
 	@Transient
 	private Utilities utils = new Utilities();
 	
+	private static final String REFERENCEVEHICLE = "vehicle.$ref";
+	private static final String EMAIL = "email";
+	
 	public void createBooking(Map<String, Object> info) {
 		Vehicle v = vehicleService.consultVehicle(info.get("licensePlate").toString());
-		Person p = personService.searchPerson(info.get("email").toString());
-		List<Booking> bookings = this.consultBooking(info.get("email").toString());
+		Person p = personService.searchPerson(info.get(EMAIL).toString());
+		List<Booking> bookings = this.consultBooking(info.get(EMAIL).toString());
 		for(int i = 0; i < bookings.size(); i++) {
 			if(bookings.get(i).getState() == StateBooking.ACTIVE) {
 				throw new NotAcceptableStatusException("User has already a booking");
@@ -76,7 +79,7 @@ public class BookingService implements StateVehicle, StateBooking{
 	}
 
 	public void confirmBooking(Map<String, Object> info) {
-		List<Booking> bookings = this.consultBooking(info.get("email").toString());
+		List<Booking> bookings = this.consultBooking(info.get(EMAIL).toString());
 		int minBatteryPerTrip = paramsRepository.findById(1).get().getMinBatteryPerTrip();
 		int batteryPerTrip = paramsRepository.findById(1).get().getBatteryPerTrip();
 		int pricePerTrip = paramsRepository.findById(1).get().getFacturationPerTrip();
@@ -129,9 +132,11 @@ public class BookingService implements StateVehicle, StateBooking{
 		List<String> emails = new ArrayList<>();
 		List<User> usuarios = new ArrayList<>();
 		for (Booking booking : allBookings) {
-			if(!emails.contains(booking.getUser().getEmail())) {
-				emails.add(booking.getUser().getEmail());
-				usuarios.add(booking.getUser());
+			if(booking.getUser() != null) {
+				if(!emails.contains(booking.getUser().getEmail())) {
+					emails.add(booking.getUser().getEmail());
+					usuarios.add(booking.getUser());
+				}
 			}
 		}
 		return usuarios;
@@ -157,17 +162,17 @@ public class BookingService implements StateVehicle, StateBooking{
 	}
 
 	public List<Booking> consultFacturationCar() {
-		Query query = new Query(Criteria.where("vehicle.$ref").is("Car"));
+		Query query = new Query(Criteria.where(REFERENCEVEHICLE).is("Car"));
         return mongoTemplate.find(query, Booking.class);
 	}
 
 	public List<Booking> consultFacturationScooter() {
-		Query query = new Query(Criteria.where("vehicle.$ref").is("Scooter"));
+		Query query = new Query(Criteria.where(REFERENCEVEHICLE).is("Scooter"));
         return mongoTemplate.find(query, Booking.class);
 	}
 
 	public List<Booking> consultFacturationMotorcycle() {
-		Query query = new Query(Criteria.where("vehicle.$ref").is("Motorcycle"));
+		Query query = new Query(Criteria.where(REFERENCEVEHICLE).is("Motorcycle"));
         return mongoTemplate.find(query, Booking.class);
 	}
 }

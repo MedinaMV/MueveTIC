@@ -1,4 +1,4 @@
-package com.MueveTic.app.Controller;
+     package com.MueveTic.app.Controller;
 
 import java.util.List;
 import java.util.Map;
@@ -23,6 +23,7 @@ import com.MueveTic.app.Entities.Vehicle;
 import com.MueveTic.app.Services.VehicleService;
 import com.MueveTic.app.Utils.AdminCarResponse;
 import com.MueveTic.app.Utils.AdminMotorcycleResponse;
+import com.MueveTic.app.Utils.AdminRatingResponse;
 import com.MueveTic.app.Utils.AdminScooterResponse;
 
 @RestController
@@ -64,6 +65,16 @@ public class VehicleController {
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 	
+	@PostMapping("/activateVehicle")
+	public ResponseEntity<String> activateVehicle(@RequestBody Map<String,Object> info) {
+		try {
+			this.vehicleService.activateVehicle(info);
+		} catch (DuplicateKeyException e) {
+			return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+		}
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
+	
 	@GetMapping("/consultVehicle")
 	public ResponseEntity<Vehicle> consultVehicle(@RequestParam String licensePlate){
 		return new ResponseEntity<>(this.vehicleService.consultVehicle(licensePlate),HttpStatus.OK);
@@ -82,6 +93,21 @@ public class VehicleController {
 	@GetMapping("/getAllScooter")
 	public ResponseEntity<List<AdminScooterResponse>> getAllScooter() {
 		return new ResponseEntity<>(this.vehicleService.getAllScooter(),HttpStatus.OK);
+	}
+	
+	@GetMapping("/consultRatingCar")
+	public List<AdminRatingResponse> consultRatingCar(){
+		return this.vehicleService.consultRatingCar();
+	}
+	
+	@GetMapping("/consultRatingScooter")
+	public List<AdminRatingResponse> consultRatingScooter(){
+		return this.vehicleService.consultRatingScooter();
+	}
+	
+	@GetMapping("/consultRatingMotorcycle")
+	public List<AdminRatingResponse> consultRatingMotorcycle(){
+		return this.vehicleService.consultRatingMotorcycle();
 	}
 	
 	@GetMapping("/availableCar")

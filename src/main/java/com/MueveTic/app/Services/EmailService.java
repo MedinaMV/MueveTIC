@@ -4,18 +4,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Transient;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
 import com.MueveTic.app.Repositories.AdminDAO;
 import com.MueveTic.app.Repositories.PersonalMantDAO;
 import com.MueveTic.app.Repositories.UserDAO;
 import com.MueveTic.app.Utils.Utilities;
-
-
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-
 
 @Service
 public class EmailService {
@@ -41,10 +38,10 @@ public class EmailService {
 			if(user.isPresent() || admin.isPresent() 
 					|| personal.isPresent()) {	
 	            helper = new MimeMessageHelper(message, true);
-	            helper.setFrom("MueveTIC@gmail.com");
+	            helper.setFrom("muevetic1@gmail.com");
 	            helper.setTo(to);
 	            helper.setSubject("Reset your account");
-	            String url="http://localhost:4200/reset-pwd?email="+utils.encryptText(to);
+	            String url="https://muevetic-frontend2023.web.app/reset-pwd?email="+utils.encryptText(to);
 	            String texto="Pulsa el botón para resetear tu contraseña:"
 	            	+"<a href=\"" + url +"\">"
 					+ "<button style=\"padding:10px 20px;background-color:#4CAF50;color:white;border:none;border-radius:5px;cursor:pointer\">"
@@ -63,7 +60,7 @@ public class EmailService {
 	    }
 	}
 
-	
+	@Async("asyncExecutor")
 	public void sendActivationEmail(String to) throws Exception {
 		MimeMessage message = mailSender.createMimeMessage();
 		MimeMessageHelper helper;
@@ -72,7 +69,7 @@ public class EmailService {
 		String url="";
 		try {
 			if(isUser) {	
-				url="http://localhost:8080/users/activate?email="+utils.encryptText(to);
+				url="https://muevetic.onrender.com/users/activate?email="+utils.encryptText(to);
 				helper = new MimeMessageHelper(message, true);
 				helper.setFrom("muevetic1@gmail.com");
 				helper.setTo(to);

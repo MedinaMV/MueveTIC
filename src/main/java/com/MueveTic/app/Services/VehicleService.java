@@ -1,6 +1,7 @@
 package com.MueveTic.app.Services;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -25,6 +26,7 @@ import com.MueveTic.app.Repositories.MotorcycleDAO;
 import com.MueveTic.app.Repositories.ScooterDAO;
 import com.MueveTic.app.Utils.AdminCarResponse;
 import com.MueveTic.app.Utils.AdminMotorcycleResponse;
+import com.MueveTic.app.Utils.AdminRatingResponse;
 import com.MueveTic.app.Utils.AdminScooterResponse;
 
 @Service
@@ -81,6 +83,7 @@ public class VehicleService {
 	
 	public void update(JSONObject jso) {
 		var car = carRepository.findByLicensePlate(jso.get(LICENSEPLATE).toString());
+		System.out.println(car);
 		var motorcycle = motorcycleRepository.findByLicensePlate(jso.get(LICENSEPLATE).toString());
 		var scooter = scooterRepository.findByLicensePlate(jso.get(LICENSEPLATE).toString());
 		if(car.isEmpty() && motorcycle.isEmpty() && scooter.isEmpty()) {
@@ -104,6 +107,26 @@ public class VehicleService {
 			newScooter.setAddress(jso.get(ADDRESS).toString());
 			newScooter.setColor(jso.get("color").toString());
 			scooterRepository.save(newScooter);
+		}
+	}
+	
+	public void activateVehicle(Map<String, Object> info) {
+		var car = carRepository.findByLicensePlate(info.get(LICENSEPLATE).toString());
+		var motorcycle = motorcycleRepository.findByLicensePlate(info.get(LICENSEPLATE).toString());
+		var scooter = scooterRepository.findByLicensePlate(info.get(LICENSEPLATE).toString());
+
+		if (car.isEmpty() && motorcycle.isEmpty() && scooter.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Vehicle doesn't exists");
+		}
+		if (car.isPresent() && car.get().isDeactivated() ) {
+			car.get().setAvailable();
+			carRepository.save(car.get());
+		} else if (motorcycle.isPresent() && motorcycle.get().isDeactivated()) {
+			motorcycle.get().setAvailable();
+			motorcycleRepository.save(motorcycle.get());
+		} else if (scooter.isPresent() && scooter.get().isDeactivated()) {
+			scooter.get().setAvailable();
+			scooterRepository.save(scooter.get());
 		}
 	}
 
@@ -154,6 +177,84 @@ public class VehicleService {
 		this.saveVehicle(v);
 	}
 	
+	public List<AdminRatingResponse> consultRatingCar() {
+		List<AdminRatingResponse> result = new ArrayList<>();
+		List<Car> cars = this.carRepository.findAll();
+		Map<String, Integer> sumModel = new HashMap<>();
+		Map<String, Integer> sumTimes = new HashMap<>();
+		for(Car car : cars) {
+			List<Booking> bookings = this.bookingRepository.findByVehicle(car);
+			for(Booking booking : bookings) {
+				if(sumModel.containsKey(car.getModel())) {
+					sumModel.put(car.getModel(), sumModel.get(car.getModel()) + booking.getRating());
+					sumTimes.put(car.getModel(), sumTimes.get(car.getModel()) + 1);
+				}else {
+					sumModel.put(car.getModel(), (int)booking.getRating());
+					sumTimes.put(car.getModel(), 1);
+				}
+			}
+		}
+		if(sumModel.size() != sumTimes.size()) {
+			throw new Error("Something failed");
+		}
+		for (Map.Entry<String, Integer> entry : sumModel.entrySet()) {
+			result.add(new AdminRatingResponse(entry.getKey(), entry.getValue(), sumTimes.get(entry.getKey())));
+		}
+		return result;
+	}
+	
+	public List<AdminRatingResponse> consultRatingMotorcycle() {
+		List<AdminRatingResponse> result = new ArrayList<>();
+		List<Motorcycle> motorcycles = this.motorcycleRepository.findAll();
+		Map<String, Integer> sumModel = new HashMap<>();
+		Map<String, Integer> sumTimes = new HashMap<>();
+		for(Motorcycle motorcycle : motorcycles) {
+			List<Booking> bookings = this.bookingRepository.findByVehicle(motorcycle);
+			for(Booking booking : bookings) {
+				if(sumModel.containsKey(motorcycle.getModel())) {
+					sumModel.put(motorcycle.getModel(), sumModel.get(motorcycle.getModel()) + booking.getRating());
+					sumTimes.put(motorcycle.getModel(), sumTimes.get(motorcycle.getModel()) + 1);
+				}else {
+					sumModel.put(motorcycle.getModel(), (int)booking.getRating());
+					sumTimes.put(motorcycle.getModel(), 1);
+				}
+			}
+		}
+		if(sumModel.size() != sumTimes.size()) {
+			throw new Error("Something failed");
+		}
+		for (Map.Entry<String, Integer> entry : sumModel.entrySet()) {
+			result.add(new AdminRatingResponse(entry.getKey(), entry.getValue(), sumTimes.get(entry.getKey())));
+		}
+		return result;
+	}
+	
+	public List<AdminRatingResponse> consultRatingScooter() {
+		List<AdminRatingResponse> result = new ArrayList<>();
+		List<Scooter> scooters = this.scooterRepository.findAll();
+		Map<String, Integer> sumModel = new HashMap<>();
+		Map<String, Integer> sumTimes = new HashMap<>();
+		for(Scooter scooter : scooters) {
+			List<Booking> bookings = this.bookingRepository.findByVehicle(scooter);
+			for(Booking booking : bookings) {
+				if(sumModel.containsKey(scooter.getModel())) {
+					sumModel.put(scooter.getModel(), sumModel.get(scooter.getModel()) + booking.getRating());
+					sumTimes.put(scooter.getModel(), sumTimes.get(scooter.getModel()) + 1);
+				}else {
+					sumModel.put(scooter.getModel(), (int)booking.getRating());
+					sumTimes.put(scooter.getModel(), 1);
+				}
+			}
+		}
+		if(sumModel.size() != sumTimes.size()) {
+			throw new Error("Something failed");
+		}
+		for (Map.Entry<String, Integer> entry : sumModel.entrySet()) {
+			result.add(new AdminRatingResponse(entry.getKey(), entry.getValue(), sumTimes.get(entry.getKey())));
+		}
+		return result;
+	}
+	
 	public List<Car> lowBatteryCar() {
 		return this.carRepository.findByState(StateVehicle.UNAVAILABLE);
 	}
@@ -194,56 +295,74 @@ public class VehicleService {
 	}
 
 	public List<AdminCarResponse> getAllCars() {
-		List<AdminCarResponse> result = new ArrayList<>();
-		List<Car> cars = this.carRepository.findAll();
-		int sum = 0;
-		int mean = 0;
-		for(Car car : cars) {
-			List<Booking> bookings = this.bookingRepository.findByVehicle(car);
-			for(Booking booking : bookings) {
-				sum += booking.getRating();
-			}
-			if(!bookings.isEmpty()) {
-				mean = sum/bookings.size();
-			}
-			result.add(new AdminCarResponse(car,(int) mean+""));
-		}
-		return result;
-	}
-		
-	public List<AdminMotorcycleResponse> getAllMotorcycle() {
-		List<AdminMotorcycleResponse> result = new ArrayList<>();
-		List<Motorcycle> motorcycles = this.motorcycleRepository.findAll();
-		int sum = 0;
-		int mean = 0;
-		for(Motorcycle motorcycle : motorcycles) {
-			List<Booking> bookings = this.bookingRepository.findByVehicle(motorcycle);
-			for(Booking booking : bookings) {
-				mean += booking.getRating();
-			}
-			if(!bookings.isEmpty()) {
-				mean = sum/bookings.size();
-			}
-			result.add(new AdminMotorcycleResponse(motorcycle,(int) mean+""));
-		}
-		return result;
+	    List<AdminCarResponse> result = new ArrayList<>();
+	    List<Car> cars = this.carRepository.findAll();
+
+	    for (Car car : cars) {
+	        List<Booking> bookings = this.bookingRepository.findByVehicle(car);
+	        int sum = 0;
+	        int mean = 0;
+
+	        for (Booking booking : bookings) {
+	            sum += booking.getRating();
+	        }
+
+	        if (!bookings.isEmpty()) {
+	            mean = sum / bookings.size();
+	        }
+
+	        result.add(new AdminCarResponse(car, String.valueOf(mean)));
+	    }
+
+	    return result;
 	}
 
-	public List<AdminScooterResponse> getAllScooter() {
-		List<AdminScooterResponse> result = new ArrayList<>();
-		List<Scooter> scooters = this.scooterRepository.findAll();
-		int sum = 0;
-		int mean = 0;
-		for(Scooter scooter : scooters) {
-			List<Booking> bookings = this.bookingRepository.findByVehicle(scooter);
-			for(Booking booking : bookings) {
-				mean += booking.getRating();
-			}
-			if(!bookings.isEmpty()) {
-				mean = sum/bookings.size();
-			}
-			result.add(new AdminScooterResponse(scooter,(int) mean+""));
-		}
-		return result;
+		
+	public List<AdminMotorcycleResponse> getAllMotorcycle() {
+	    List<AdminMotorcycleResponse> result = new ArrayList<>();
+	    List<Motorcycle> motorcycles = this.motorcycleRepository.findAll();
+
+	    for (Motorcycle motorcycle : motorcycles) {
+	        List<Booking> bookings = this.bookingRepository.findByVehicle(motorcycle);
+	        int sum = 0;
+	        int mean = 0;
+
+	        for (Booking booking : bookings) {
+	            sum += booking.getRating();
+	        }
+
+	        if (!bookings.isEmpty()) {
+	            mean = sum / bookings.size();
+	        }
+
+	        result.add(new AdminMotorcycleResponse(motorcycle, String.valueOf(mean)));
+	    }
+
+	    return result;
 	}
+
+
+	public List<AdminScooterResponse> getAllScooter() {
+	    List<AdminScooterResponse> result = new ArrayList<>();
+	    List<Scooter> scooters = this.scooterRepository.findAll();
+
+	    for (Scooter scooter : scooters) {
+	        List<Booking> bookings = this.bookingRepository.findByVehicle(scooter);
+	        int sum = 0;
+	        int mean = 0;
+
+	        for (Booking booking : bookings) {
+	            sum += booking.getRating();
+	        } 
+
+	        if (!bookings.isEmpty()) {
+	            mean = sum / bookings.size();
+	        }
+
+	        result.add(new AdminScooterResponse(scooter, String.valueOf(mean)));
+	    }
+
+	    return result;
+	}
+
 }
